@@ -10,3 +10,5 @@
 | :--- | :--- | :---: | :--- | :---: | :---: | :--- |
 | Topic #1 | Paper Title | Publishing Year | Author #1 et al. | [arXiv/DOI]() | [GitHub]() | Short summary to be inserted in the Related Work section |
 |  | TODO | TODO | TODO | TODO | TODO | TODO |
+
+Все оснавное в Литература к диплому, я просто делаю все в своей базе знаний связанной с BCI поэтому решил просто импортировать сюда. (Поздно понял зачем этот файл был нужен)
