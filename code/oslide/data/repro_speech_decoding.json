@@ -1,0 +1,14 @@
+{
+ "source": "Отчёт «Декодирование речи из ECoG: отчёт по двухэтапному обучению» (Comet ML, проект stocck/speech-decoding). Числа перенесены из отчёта вручную; при появлении checkpoints/*.json из speech_decoding заменить этот файл выгрузкой.",
+ "protocol": "одно разбиение по записям, отдельные val и test, все каналы (30 / 42), первый этап заморожен, один запуск на вариант",
+ "n_classes": 27,
+ "paper": {"ref": "Petrosyan et al., J. Neural Eng. 19 (2022) 066016",
+           "P1": {"stage1_r": 0.65, "stage2_acc": 0.55},
+           "P2": {"stage1_r": 0.60, "stage2_acc": 0.70}},
+ "patients": {
+  "P1": {"stage1_r_test": 0.639, "n_test_stage2": 200,
+         "stage2_acc_test": {"res8-narrow, 10k": 0.205, "res8-narrow, 50k": 0.230, "res8, 50k": 0.210}},
+  "P2": {"stage1_r_test": 0.596, "n_test_stage2": 230,
+         "stage2_acc_test": {"res8-narrow, 10k": 0.174, "res8-narrow, 50k": 0.230, "res8, 50k": 0.222}}
+ }
+}
