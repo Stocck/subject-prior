@@ -1,11 +1,11 @@
-# O-slide: этап 1 воспроизводится, этап 2 — нет
+# O-slide: точнее, не теряя интерпретируемости
 
-Рисунок к one-slide talk ([slides/oslide.pdf](../../slides/oslide.pdf)): два воспроизведения Petrosyan et al. (2022),
-доля от результата статьи на этапе 1 (корреляция мел-спектрограммы) и этапе 2 (accuracy 27 классов).
+Материалы к one-slide talk ([slides/oslide.pdf](../../slides/oslide.pdf)): идея — сохранить интерпретируемый ED-блок
+Petrosyan et al. (2022) и заменить BiLSTM причинной TCN; текущие результаты — воспроизведение базовой модели.
 
 ```bash
 pip install -r code/oslide/requirements.txt
-python code/oslide/main.py --plot     # вычисления -> results/summary.json, затем рисунок -> slides/figs/oslide.{pdf,png}
+python code/oslide/main.py --plot     # вычисления -> results/summary.json, затем slides/figs/: oslide_results.tex, tcn_rf.tex, oslide.{pdf,png}
 python code/oslide/plot.py            # только перерисовать из готовой сводки
 cd slides && pdflatex oslide.tex      # или xelatex
 ```
@@ -13,7 +13,7 @@ cd slides && pdflatex oslide.tex      # или xelatex
 | Файл | Что |
 |---|---|
 | `main.py` | основной модуль: читает метрики прогонов, считает доли от статьи и погрешности, пишет `results/summary.json` |
-| `plot.py` | только рисунок, читает `results/summary.json` |
+| `plot.py` | только рисунки, читает `results/summary.json`: таблица результатов для слайда (`oslide_results.tex`), схема рецептивного поля TCN (`tcn_rf.tex`), столбчатый рисунок двух воспроизведений (`oslide.pdf`, для статьи) |
 | `data/repro_baseline_cv_summary_seed0.json` | прогон 1 «код группы»: агрегаты 6-fold CV (6/8 каналов, `filtfilt`), режим R2 — выбор чекпойнта по val |
 | `data/repro_speech_decoding.json` | прогон 2 «по тексту статьи»: все каналы, причинный FIR, одно разбиение; числа перенесены из отчёта Comet `stocck/speech-decoding` вручную |
 

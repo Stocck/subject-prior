@@ -71,9 +71,72 @@ def make_figure(summary_path, out_stem=None):
     print("рисунок:", out_stem.with_suffix(".pdf"))
 
 
+def make_results_table(summary_path, out=None):
+    """Таблица текущих результатов для слайда: TeX-фрагмент, числа берутся из сводки."""
+    s = json.loads(Path(summary_path).read_text())
+    out = Path(out or REPO / "slides" / "figs" / "oslide_results.tex")
+    r1, r2 = s["runs"]["run1"]["patients"], s["runs"]["run2"]["patients"]
+    f = lambda v: fmt(v).replace(",", "{,}")
+    row = lambda name, a, b: f"{name} & {f(a)} & {f(b)} \\\\"
+    lines = [
+        "% сгенерировано code/oslide/plot.py из results/summary.json — не править вручную",
+        "\\begin{tabular}{@{}l@{\\hspace{4pt}}c@{\\hspace{6pt}}c@{}}",
+        "& P1 & P2 \\\\ \\hline",
+        "\\multicolumn{3}{@{}l}{\\textit{Этап 1: корреляция $r$}} \\\\",
+        row("\\quad статья", r2["P1"]["stage1"]["paper"], r2["P2"]["stage1"]["paper"]),
+        row("\\quad воспроизведение", r2["P1"]["stage1"]["value"], r2["P2"]["stage1"]["value"]),
+        "\\multicolumn{3}{@{}l}{\\textit{Этап 2: accuracy, 27 классов}} \\\\",
+        row("\\quad статья", r2["P1"]["stage2"]["paper"], r2["P2"]["stage2"]["paper"]),
+        row("\\quad код группы (видит будущее)", r1["P1"]["stage2"]["value"], r1["P2"]["stage2"]["value"]),
+        row("\\quad \\textbf{причинно~--- база для TCN}", r2["P1"]["stage2"]["value"], r2["P2"]["stage2"]["value"]),
+        "\\end{tabular}",
+    ]
+    out.write_text("\n".join(lines) + "\n")
+    print("таблица:", out)
+
+
+def make_tcn_diagram(out=None, levels=4, kernel=2, width=16, dx=0.2, dy=0.36):
+    """Рецептивное поле причинной TCN: выход в момент t зависит только от прошлого.
+
+    Слой l (1..levels) — свёртка с ядром kernel и расширением d = 2**(l-1).
+    Генерирует TikZ-фрагмент; активные узлы — те, от которых зависит выход в t.
+    """
+    out = Path(out or REPO / "slides" / "figs" / "tcn_rf.tex")
+    T = width - 1
+    active = {levels: {T}}
+    for l in range(levels, 0, -1):
+        d = 2 ** (l - 1)
+        active[l - 1] = {tau - j * d for tau in active[l] for j in range(kernel) if tau - j * d >= 0}
+    rf = 1 + (kernel - 1) * sum(2 ** (l - 1) for l in range(1, levels + 1))
+    L = ["% сгенерировано code/oslide/plot.py (make_tcn_diagram) — не править вручную",
+         "\\begin{tikzpicture}[font=\\tiny]"]
+    for l in range(1, levels + 1):
+        d = 2 ** (l - 1)
+        for tau in active[l]:
+            for j in range(kernel):
+                c = tau - j * d
+                if c >= 0:
+                    L.append(f"\\draw[runB!80!black, line width=0.5pt] ({tau*dx:.2f},{l*dy:.2f}) -- ({c*dx:.2f},{(l-1)*dy:.2f});")
+    for l in range(levels + 1):
+        for tau in range(width):
+            on = tau in active[l]
+            style = "fill=runB, draw=runB!70!black" if on else "fill=white, draw=gray!60"
+            L.append(f"\\fill[{style}] ({tau*dx:.2f},{l*dy:.2f}) circle (1.1pt);")
+        name = "вход $e_m$" if l == 0 else f"$d={2**(l-1)}$"
+        L.append(f"\\node[anchor=east, gray!70!black] at (-0.12,{l*dy:.2f}) {{{name}}};")
+    L.append(f"\\node[anchor=west] at ({T*dx+0.12:.2f},{levels*dy:.2f}) {{выход в $t$}};")
+    L.append(f"\\draw[-stealth, gray] (0,-0.22) -- ({T*dx+0.3:.2f},-0.22) node[right] {{время}};")
+    L.append(f"\\node[anchor=north] at ({T*dx/2:.2f},-0.26) {{рецептивное поле {rf} отсчётов, только прошлое}};")
+    L.append("\\end{tikzpicture}")
+    out.write_text("\n".join(L) + "\n")
+    print("схема TCN:", out, f"(рецептивное поле {rf})")
+
+
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--summary", default=str(HERE / "results" / "summary.json"))
     ap.add_argument("--out", default=None, help="путь без расширения")
     a = ap.parse_args()
     make_figure(a.summary, a.out)
+    make_results_table(a.summary)
+    make_tcn_diagram()

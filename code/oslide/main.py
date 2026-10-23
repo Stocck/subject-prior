@@ -93,8 +93,10 @@ def main():
     print("сводка:", args.out)
 
     if args.plot:
-        from plot import make_figure  # рисование отделено от вычислений
+        from plot import make_figure, make_results_table, make_tcn_diagram  # рисование отделено от вычислений
         make_figure(args.out)
+        make_results_table(args.out)
+        make_tcn_diagram()
 
 
 if __name__ == "__main__":

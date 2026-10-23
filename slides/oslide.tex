@@ -16,61 +16,60 @@
 \usecolortheme{beaver}
 \setbeamertemplate{navigation symbols}{}
 \setbeamersize{text margin left=0.45cm,text margin right=0.45cm}
+\setbeamerfont{frametitle}{size=\large}
 \definecolor{runA}{HTML}{2A78D6}
 \definecolor{runB}{HTML}{EB6834}
 
 \begin{document}
-\begin{frame}{Точность теряется после детектора огибающей}
-\vspace{-1.1em}
+\begin{frame}{Точнее, не теряя интерпретируемости: меняю временной модуль}
+\vspace{-1.0em}
 \begin{center}
-\begin{tikzpicture}[font=\scriptsize, node distance=2.2mm,
-  blk/.style={draw, rounded corners=1pt, fill=white, minimum height=5.5mm, inner sep=2pt, align=center},
+\begin{tikzpicture}[font=\scriptsize, node distance=2.4mm,
+  blk/.style={draw, rounded corners=1pt, fill=white, minimum height=6mm, inner sep=2pt, align=center},
   arr/.style={-stealth, thick}]
   \node (x) [align=center] {iEEG\\$L$ каналов};
   \node (w) [blk, right=of x] {пространств.\\фильтры};
   \node (h) [blk, right=of w] {полосовые\\фильтры};
   \node (r) [blk, right=of h] {$|\cdot|$};
   \node (s) [blk, right=of r] {ФНЧ};
-  \node (ed) [draw, dashed, rounded corners, inner sep=2.2mm, fit=(w)(h)(r)(s),
-             label={[font=\tiny, yshift=-0.6mm]above:ED-блок: веса $\to$ пространственные и частотные паттерны}] {};
-  \node (l) [blk, right=5mm of s, fill=runB!15] {BiLSTM};
-  \node (fc) [blk, right=9mm of l, yshift=3.6mm] {FC};
-  \node (rn) [blk, right=9mm of l, yshift=-3.6mm] {ResNet};
-  \node (mel) [right=of fc, align=left] {мел-спектрограмма \textbf{(этап 1, $r$)}};
-  \node (wd)  [right=of rn, align=left] {слово \textbf{(этап 2, accuracy)}};
+  \node (ed) [draw=runA, thick, dashed, rounded corners, inner sep=2.2mm, fit=(w)(h)(r)(s),
+     label={[font=\tiny, text=runA!80!black, yshift=-0.5mm]above:ED-блок сохраняется: веса $\to$ где на коре и на каких частотах},
+     label={[font=\tiny, text=gray!70!black, yshift=0.5mm]below:выход $e_m(t)$~--- огибающие $M$ ветвей}] {};
+  \node (tcn) [blk, right=6mm of s, fill=runB!18, draw=runB!80!black, thick] {\textbf{причинная TCN}\\расширенные свёртки};
+  \node (old) [blk, above=4.5mm of tcn, text=gray, draw=gray!60] {BiLSTM};
+  \draw[red!70!black, thick] (old.south west)--(old.north east);
+  \draw[-stealth, gray] (old)--(tcn) node[midway, right, font=\tiny]{замена};
+  \node (fc) [blk, right=8mm of tcn, yshift=3.8mm] {FC};
+  \node (rn) [blk, right=8mm of tcn, yshift=-3.8mm] {ResNet};
+  \node (mel) [right=of fc, align=left] {мел-спектр звука\\\textbf{этап 1}, $r$};
+  \node (wd)  [right=of rn, align=left] {слово (27 кл.)\\\textbf{этап 2}, accuracy};
   \draw[arr] (x)--(w); \draw[arr] (w)--(h); \draw[arr] (h)--(r); \draw[arr] (r)--(s);
-  \draw[arr] (s)--(l); \draw[arr] (l.east)--(fc.west); \draw[arr] (l.east)--(rn.west);
+  \draw[arr] (s)--(tcn); \draw[arr] (tcn.east)--(fc.west); \draw[arr] (tcn.east)--(rn.west);
   \draw[arr] (fc)--(mel); \draw[arr] (rn)--(wd);
-  \node[above=0.4mm of l, font=\tiny, text=runB!80!black, align=center] {диплом:\\$\to$ причинная TCN};
 \end{tikzpicture}
 \end{center}
-\vspace{-0.7em}
+\vspace{-0.6em}
 \begin{columns}[T,onlytextwidth]
-\begin{column}{0.56\textwidth}
-  \includegraphics[width=\linewidth]{figs/oslide.pdf}
-\end{column}
-\begin{column}{0.42\textwidth}
+\begin{column}{0.5\textwidth}
 \scriptsize
-\textbf{Результат}\\[0.1em]
-Этап 1 = статья в обоих прогонах (98--103\,\%).\\
-Этап 2: 82--83\,\% и 33--42\,\% (случайно 3,7\,\%).
+\textbf{Идея.} Точность компактного декодера ограничивает не интерпретируемый ED-блок, а~временной модуль после него.
+Меняю BiLSTM на причинную TCN: глубина прошлого задана явно, будущее не используется.
 
-\vspace{0.25em}
-\textbf{Чем различаются прогоны}\\[0.1em]
-{\color{runA}1}: 6/8 каналов, фильтр с нулевой фазой (видит будущее), CV.\\
-{\color{runB}2}: 30/42 канала, причинный фильтр, одно разбиение.\\
-Контроль: причинный фильтр в прогоне~1 $\Rightarrow$ 47\,\%$\to$22\,\% (P1, 1 фолд).
+\vspace{0.3em}
+\centering\input{figs/tcn_rf.tex}
+\end{column}
+\begin{column}{0.47\textwidth}
+\scriptsize
+\textbf{Сейчас: база воспроизведена}\\[0.2em]
+{\input{figs/oslide_results.tex}}\\[0.2em]
+Случайный уровень этапа 2~--- 0,037.
 
-\vspace{0.25em}
-\textbf{Следствие}\\[0.1em]
-При одинаковом $r$ точность различается вдвое: $r$ не говорит о качестве классификации. TCN сравниваю по этапу 2, причинно, с прогоном 2 как базой.
-
-\vspace{0.2em}
-{\tiny P1~--- sEEG, P2~--- ЭКоГ. Планки: {\color{runA}$\pm$SD по 6 фолдам}, {\color{runB}$\pm$SE биномиальная}.}
+\vspace{0.35em}
+\textbf{Проверка:} TCN против BiLSTM при том же ED-блоке~--- accuracy этапа~2 и сохранность паттернов.
 \end{column}
 \end{columns}
 
-\vspace{-0.3em}
-{\tiny\color{gray} Схема~--- по рис.~3 Petrosyan et al., J.~Neural Eng.\ 19 (2022) 066016. Акустическая утечка ещё не проверена. Код: \texttt{code/oslide}, github.com/Stocck/subject-prior.}
+\vfill
+{\tiny\color{gray} Схема~--- по рис.~3 Petrosyan et al., J.~Neural Eng.\ 19 (2022) 066016; TCN~--- Bai, Kolter, Koltun (2018). Акустическая утечка не проверена. Код: \texttt{code/oslide}.}
 \end{frame}
 \end{document}
