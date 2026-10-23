@@ -11,6 +11,8 @@
   \usepackage[russian,provide=*]{babel}
 \fi
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,fit,decorations.pathreplacing,calc}
 \usecolortheme{beaver}
 \setbeamertemplate{navigation symbols}{}
 \setbeamersize{text margin left=0.45cm,text margin right=0.45cm}
@@ -19,40 +21,56 @@
 
 \begin{document}
 \begin{frame}{Точность теряется после детектора огибающей}
-\vspace{-0.9em}
-{\small Декодер Petrosyan et al.\ (2022): интерпретируемый ED-блок $\to$ BiLSTM $\to$ классификатор.}
-
-\vspace{0.2em}
+\vspace{-1.1em}
+\begin{center}
+\begin{tikzpicture}[font=\scriptsize, node distance=2.2mm,
+  blk/.style={draw, rounded corners=1pt, fill=white, minimum height=5.5mm, inner sep=2pt, align=center},
+  arr/.style={-stealth, thick}]
+  \node (x) [align=center] {iEEG\\$L$ каналов};
+  \node (w) [blk, right=of x] {пространств.\\фильтры};
+  \node (h) [blk, right=of w] {полосовые\\фильтры};
+  \node (r) [blk, right=of h] {$|\cdot|$};
+  \node (s) [blk, right=of r] {ФНЧ};
+  \node (ed) [draw, dashed, rounded corners, inner sep=2.2mm, fit=(w)(h)(r)(s),
+             label={[font=\tiny, yshift=-0.6mm]above:ED-блок: веса $\to$ пространственные и частотные паттерны}] {};
+  \node (l) [blk, right=5mm of s, fill=runB!15] {BiLSTM};
+  \node (fc) [blk, right=9mm of l, yshift=3.6mm] {FC};
+  \node (rn) [blk, right=9mm of l, yshift=-3.6mm] {ResNet};
+  \node (mel) [right=of fc, align=left] {мел-спектрограмма \textbf{(этап 1, $r$)}};
+  \node (wd)  [right=of rn, align=left] {слово \textbf{(этап 2, accuracy)}};
+  \draw[arr] (x)--(w); \draw[arr] (w)--(h); \draw[arr] (h)--(r); \draw[arr] (r)--(s);
+  \draw[arr] (s)--(l); \draw[arr] (l.east)--(fc.west); \draw[arr] (l.east)--(rn.west);
+  \draw[arr] (fc)--(mel); \draw[arr] (rn)--(wd);
+  \node[above=0.4mm of l, font=\tiny, text=runB!80!black, align=center] {диплом:\\$\to$ причинная TCN};
+\end{tikzpicture}
+\end{center}
+\vspace{-0.7em}
 \begin{columns}[T,onlytextwidth]
-\begin{column}{0.6\textwidth}
+\begin{column}{0.56\textwidth}
   \includegraphics[width=\linewidth]{figs/oslide.pdf}
 \end{column}
-\begin{column}{0.38\textwidth}
+\begin{column}{0.42\textwidth}
 \scriptsize
-\textbf{Обозначения}\\[0.1em]
-Этап 1: окно 1\,с iEEG $\to$ 40 лог-мел полос; $r$ Пирсона на test.\\
-Этап 2: признаки этапа 1 $\to$ 27 классов; случайно 3,7\,\%.\\
-P1~--- sEEG, P2~--- ЭКоГ. Планки: {\color{runA}$\pm$SD по 6 фолдам}, {\color{runB}$\pm$SE}.
-
-\vspace{0.4em}
 \textbf{Результат}\\[0.1em]
 Этап 1 = статья в обоих прогонах (98--103\,\%).\\
-Этап 2: 82--83\,\% и 33--42\,\% от статьи.
+Этап 2: 82--83\,\% и 33--42\,\% (случайно 3,7\,\%).
 
-\vspace{0.4em}
+\vspace{0.25em}
 \textbf{Чем различаются прогоны}\\[0.1em]
-{\color{runA}1}: 6/8 каналов, фильтр с нулевой фазой (видит будущее), 6-fold CV.\\
-{\color{runB}2}: 30/42 канала, причинный фильтр, как в статье; одно разбиение.\\
+{\color{runA}1}: 6/8 каналов, фильтр с нулевой фазой (видит будущее), CV.\\
+{\color{runB}2}: 30/42 канала, причинный фильтр, одно разбиение.\\
 Контроль: причинный фильтр в прогоне~1 $\Rightarrow$ 47\,\%$\to$22\,\% (P1, 1 фолд).
+
+\vspace{0.25em}
+\textbf{Следствие}\\[0.1em]
+При одинаковом $r$ точность различается вдвое: $r$ не говорит о качестве классификации. TCN сравниваю по этапу 2, причинно, с прогоном 2 как базой.
+
+\vspace{0.2em}
+{\tiny P1~--- sEEG, P2~--- ЭКоГ. Планки: {\color{runA}$\pm$SD по 6 фолдам}, {\color{runB}$\pm$SE биномиальная}.}
 \end{column}
 \end{columns}
 
-\vspace{-0.1em}
-\begin{block}{Следствие}
-\footnotesize При одинаковом $r$ точность слов различается вдвое: этап 1 не измеряет того, что нужно классификатору.
-Замену BiLSTM на причинную TCN сравниваю по этапу 2 в причинном режиме; базовая линия~--- прогон 2.
-\end{block}
-\vspace{-0.5em}
-{\tiny\color{gray} Акустическая утечка (microphone effect) ещё не проверена. Код: \texttt{code/oslide}, github.com/Stocck/subject-prior.}
+\vspace{-0.3em}
+{\tiny\color{gray} Схема~--- по рис.~3 Petrosyan et al., J.~Neural Eng.\ 19 (2022) 066016. Акустическая утечка ещё не проверена. Код: \texttt{code/oslide}, github.com/Stocck/subject-prior.}
 \end{frame}
 \end{document}

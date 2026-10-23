@@ -29,7 +29,7 @@ def make_figure(summary_path, out_stem=None):
     plt.rcParams.update({"font.family": "DejaVu Sans", "font.size": 11.5,
                          "axes.edgecolor": MUTED, "axes.labelcolor": INK,
                          "xtick.color": INK, "ytick.color": MUTED})
-    fig, ax = plt.subplots(figsize=(6.4, 3.9))
+    fig, ax = plt.subplots(figsize=(6.4, 3.55))
 
     stages = [("stage1", "Этап 1: мел-спектрограмма\nкорреляция r"),
               ("stage2", "Этап 2: 26 слов + тишина\naccuracy")]
